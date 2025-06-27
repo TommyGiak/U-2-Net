@@ -3,6 +3,7 @@ from __future__ import print_function, division
 import glob
 import torch
 from skimage import io, transform, color
+import cv2
 import numpy as np
 import random
 import math
@@ -264,3 +265,61 @@ class SalObjDataset(Dataset):
 			sample = self.transform(sample)
 
 		return sample
+
+class SemanticSalObjDataset(Dataset):
+	def __init__(self,img_name_list,lbl_name_list,transform=None):
+		# self.root_dir = root_dir
+		# self.image_name_list = glob.glob(image_dir+'*.png')
+		# self.label_name_list = glob.glob(label_dir+'*.png')
+		self.image_name_list = img_name_list
+		self.label_name_list = lbl_name_list
+		self.transform = transform
+
+	def __len__(self):
+		return len(self.image_name_list)
+
+	def __getitem__(self,idx):
+
+		# image = Image.open(self.image_name_list[idx])#io.imread(self.image_name_list[idx])
+		# label = Image.open(self.label_name_list[idx])#io.imread(self.label_name_list[idx])
+
+		image = cv2.imread(self.image_name_list[idx])
+		imname = self.image_name_list[idx]
+		imidx = np.array([idx])
+
+		if(0==len(self.label_name_list)):
+			label_3 = np.zeros(image.shape[:2], dtype=np.float32)
+		else:
+			label_3 = cv2.imread(self.label_name_list[idx], cv2.IMREAD_GRAYSCALE).astype(np.float32)/255.
+
+		if(3==len(label_3.shape)):
+			label = label_3[:,:,0]
+		elif(2==len(label_3.shape)):
+			label = label_3
+
+		if(3==len(image.shape) and 2==len(label.shape)):
+			label = divide_three_classes(label)
+		elif(2==len(image.shape) and 2==len(label.shape)):
+			image = image[:,:,np.newaxis]
+			label = divide_three_classes(label)
+
+		sample = {'imidx':imidx, 'image':image, 'label':label}
+
+		if self.transform:
+			sample = self.transform(sample)
+
+		return sample
+	
+def divide_three_classes(img, n_classes=3):
+	multiclass = np.zeros((*img.shape,n_classes), dtype=np.float32)
+	
+	body = np.where(img<0.4, 1., 0.)
+	marker = np.where((img<0.75)&(img>=0.4), 1., 0.)
+	wound = np.where(img >= 0.75, 1., 0.)
+
+	multiclass[:,:,0] = body
+	multiclass[:,:,1] = marker
+	multiclass[:,:,2] = wound
+
+	return multiclass
+
