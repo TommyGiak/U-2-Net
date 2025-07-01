@@ -298,10 +298,10 @@ class SemanticSalObjDataset(Dataset):
 			label = label_3
 
 		if(3==len(image.shape) and 2==len(label.shape)):
-			label = divide_three_classes(label)
+			label = divide_four_classes(label)
 		elif(2==len(image.shape) and 2==len(label.shape)):
 			image = image[:,:,np.newaxis]
-			label = divide_three_classes(label)
+			label = divide_four_classes(label)
 
 		sample = {'imidx':imidx, 'image':image, 'label':label}
 
@@ -310,16 +310,18 @@ class SemanticSalObjDataset(Dataset):
 
 		return sample
 	
-def divide_three_classes(img, n_classes=3):
+def divide_four_classes(img, n_classes=4):
 	multiclass = np.zeros((*img.shape,n_classes), dtype=np.float32)
 	
-	body = np.where(img<0.4, 1., 0.)
-	marker = np.where((img<0.75)&(img>=0.4), 1., 0.)
+	bg = np.where(img < 0.15, 1., 0.)
+	body = np.where((img>=0.15)&(img<0.45), 1., 0.)
+	marker = np.where((img>=0.45)&(img<0.75), 1., 0.)
 	wound = np.where(img >= 0.75, 1., 0.)
 
-	multiclass[:,:,0] = body
-	multiclass[:,:,1] = marker
-	multiclass[:,:,2] = wound
+	multiclass[:,:,0] = bg
+	multiclass[:,:,1] = body
+	multiclass[:,:,2] = marker
+	multiclass[:,:,3] = wound
 
 	return multiclass
 

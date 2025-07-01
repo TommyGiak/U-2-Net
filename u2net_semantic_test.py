@@ -22,14 +22,14 @@ from model import SU2NET # full size version 173.6 MB
 from model import SU2NETP # small version u2net 4.7 MB
 
 
-PATH_TO_WEIGHTS = './saved_models/u2net/u2net_bce_itr_6_train_2.625809_tar_0.579920.pth'
+PATH_TO_WEIGHTS = './saved_models/u2net/u2net_bce_itr_2000_train_0.729469_tar_0.096042.pth'
 
 
 # normalize the predicted SOD probability map
 def normPRED(d):
     semantic_layer = torch.argmax(d, dim=0)
 
-    return (semantic_layer+1)/3.
+    return semantic_layer/3.
 
 def save_output(image_name,pred,d_dir):
 
@@ -79,10 +79,10 @@ def main(path=PATH_TO_WEIGHTS):
     # --------- 3. model define ---------
     if(model_name=='u2net'):
         print("...load U2NET")
-        net = SU2NET(3,3)
+        net = SU2NET(in_ch=3, out_ch=4)
     elif(model_name=='u2netp'):
         print("...load U2NEP")
-        net = SU2NETP(3,3)
+        net = SU2NETP(in_ch=3, out_ch=4)
 
     if torch.cuda.is_available():
         net.load_state_dict(torch.load(model_dir))
@@ -108,7 +108,7 @@ def main(path=PATH_TO_WEIGHTS):
         d1,d2,d3,d4,d5,d6,d7= net(inputs_test)
 
         # normalization
-        pred = F.softmax(torch.squeeze(d1), dim=0) # non sono sicuro e non ho fatto la prova che la dim giusta sia 0, potrebbe dare errore
+        pred = F.softmax(torch.squeeze(d1), dim=0) # non sono sicuro che la dim giusta sia 0... may a bug
         pred = normPRED(pred)
 
         # save results to test_results folder

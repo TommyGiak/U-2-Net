@@ -57,8 +57,8 @@ label_ext = '.png'
 
 model_dir = os.path.join(os.getcwd(), 'saved_models', model_name + os.sep)
 
-epoch_num = 100000
-batch_size_train = 12
+epoch_num = 5000
+batch_size_train = 4
 batch_size_val = 1
 train_num = 0
 val_num = 0
@@ -98,16 +98,17 @@ salobj_dataloader = DataLoader(salobj_dataset, batch_size=batch_size_train, shuf
 # ------- 3. define model --------
 # define the net
 if(model_name=='u2net'):
-    net = SU2NET(in_ch=3, out_ch=3)
+    net = SU2NET(in_ch=3, out_ch=4)
 elif(model_name=='u2netp'):
-    net = SU2NETP(in_ch=3, out_ch=3)
+    net = SU2NETP(in_ch=3, out_ch=4)
 
 if torch.cuda.is_available():
     net.cuda()
 
 # ------- 4. define optimizer --------
 print("---define optimizer...")
-optimizer = optim.Adam(net.parameters(), lr=0.0004, betas=(0.9, 0.999), eps=1e-08, weight_decay=0)
+optimizer = optim.Adam(net.parameters(), lr=0.0004, betas=(0.9, 0.999), eps=1e-08, weight_decay=1e-5)
+scheduler = torch.optim.lr_scheduler.LinearLR(optimizer=optimizer, start_factor=1, end_factor=1/10, total_iters=50)
 
 # ------- 5. training process --------
 print("---start training...")
@@ -115,7 +116,7 @@ ite_num = 0
 running_loss = 0.0
 running_tar_loss = 0.0
 ite_num4val = 0
-save_frq = 2000 # save the model every 2000 iterations
+save_frq = 5000 # save the model every 2000 iterations
 
 for epoch in range(0, epoch_num):
     net.train()
@@ -145,6 +146,7 @@ for epoch in range(0, epoch_num):
 
         loss.backward()
         optimizer.step()
+        scheduler.step()
 
         # # print statistics
         running_loss += loss.data.item()

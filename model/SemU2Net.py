@@ -317,7 +317,7 @@ class RSU4F(nn.Module):#UNet04FRES(nn.Module):
 ##### U^2-Net ####
 class U2NET(nn.Module):
 
-    def __init__(self,in_ch=3,out_ch=3):
+    def __init__(self,in_ch=3,out_ch=4, dropout_rate=0.1):
         super(U2NET,self).__init__()
 
         self.stage1 = RSU7(in_ch,32,64)
@@ -353,6 +353,9 @@ class U2NET(nn.Module):
 
         self.outconv = nn.Conv2d(6*out_ch,out_ch,1)
 
+        # Add dropout layers after each decoder stage and before side outputs
+        self.dropout = nn.Dropout2d(p=dropout_rate)
+
     def forward(self,x):
 
         hx = x
@@ -383,19 +386,23 @@ class U2NET(nn.Module):
 
         #-------------------- decoder --------------------
         hx5d = self.stage5d(torch.cat((hx6up,hx5),1))
+        hx5d = self.dropout(hx5d)
         hx5dup = _upsample_like(hx5d,hx4)
 
         hx4d = self.stage4d(torch.cat((hx5dup,hx4),1))
+        hx4d = self.dropout(hx4d)
         hx4dup = _upsample_like(hx4d,hx3)
 
         hx3d = self.stage3d(torch.cat((hx4dup,hx3),1))
+        hx3d = self.dropout(hx3d)
         hx3dup = _upsample_like(hx3d,hx2)
 
         hx2d = self.stage2d(torch.cat((hx3dup,hx2),1))
+        hx2d = self.dropout(hx2d)
         hx2dup = _upsample_like(hx2d,hx1)
 
         hx1d = self.stage1d(torch.cat((hx2dup,hx1),1))
-
+        hx1d = self.dropout(hx1d)
 
         #side output
         d1 = self.side1(hx1d)
@@ -422,7 +429,7 @@ class U2NET(nn.Module):
 ### U^2-Net small ###
 class U2NETP(nn.Module):
 
-    def __init__(self,in_ch=3,out_ch=3):
+    def __init__(self,in_ch=3,out_ch=4, dropout_rate=0.1):
         super(U2NETP,self).__init__()
 
         self.stage1 = RSU7(in_ch,16,64)
@@ -458,6 +465,9 @@ class U2NETP(nn.Module):
 
         self.outconv = nn.Conv2d(6*out_ch,out_ch,1)
 
+        # Add dropout layers after each decoder stage and before side outputs
+        self.dropout = nn.Dropout2d(p=dropout_rate)
+
     def forward(self,x):
 
         hx = x
@@ -488,19 +498,23 @@ class U2NETP(nn.Module):
 
         #decoder
         hx5d = self.stage5d(torch.cat((hx6up,hx5),1))
+        hx5d = self.dropout(hx5d)
         hx5dup = _upsample_like(hx5d,hx4)
 
         hx4d = self.stage4d(torch.cat((hx5dup,hx4),1))
+        hx4d = self.dropout(hx4d)
         hx4dup = _upsample_like(hx4d,hx3)
 
         hx3d = self.stage3d(torch.cat((hx4dup,hx3),1))
+        hx3d = self.dropout(hx3d)
         hx3dup = _upsample_like(hx3d,hx2)
 
         hx2d = self.stage2d(torch.cat((hx3dup,hx2),1))
+        hx2d = self.dropout(hx2d)
         hx2dup = _upsample_like(hx2d,hx1)
 
         hx1d = self.stage1d(torch.cat((hx2dup,hx1),1))
-
+        hx1d = self.dropout(hx1d)
 
         #side output
         d1 = self.side1(hx1d)
