@@ -65,7 +65,7 @@ label_ext = '.png'
 
 
 
-epoch_num = 1
+epoch_num = 100
 batch_size_train = 4
 batch_size_val = 1
 train_num = 0
@@ -102,7 +102,12 @@ for i, tra_image_dir_i in enumerate(tra_image_dir):
           RandomCrop(288),
           ToTensorLab(flag=0)]))
 
-  salobj_dataloader = DataLoader(salobj_dataset, batch_size=batch_size_train, shuffle=True)#, num_workers=1)
+  salobj_dataloader = DataLoader(salobj_dataset, 
+                                 batch_size=batch_size_train, 
+                                 shuffle=True,
+                                 pin_memory=True,
+                                 num_workers=4,
+                                 )
 
 
   # ------- 3. define model --------
@@ -113,7 +118,9 @@ for i, tra_image_dir_i in enumerate(tra_image_dir):
       net = SU2NETP(in_ch=3, out_ch=4)
 
   if torch.cuda.is_available():
-      net.cuda()
+      net.to('cuda')
+
+  print(f'USING DEVICE: {next(net.parameters()).device}')
 
   # ------- 4. define optimizer --------
   print("---define optimizer...")
@@ -143,7 +150,7 @@ for i, tra_image_dir_i in enumerate(tra_image_dir):
 
           # wrap them in Variable
           if torch.cuda.is_available():
-              inputs_v, labels_v = Variable(inputs.cuda(), requires_grad=False), Variable(labels.cuda(),
+              inputs_v, labels_v = Variable(inputs.to('cuda', non_blocking=True), requires_grad=False), Variable(labels.to('cuda', non_blocking=True),
                                                                                           requires_grad=False)
           else:
               inputs_v, labels_v = Variable(inputs, requires_grad=False), Variable(labels, requires_grad=False)
@@ -199,7 +206,7 @@ for img_path in tra_img_name_list:
   for k in range(1,len(bbb)):
     imidx = imidx + "." + bbb[k]
 
-  tra_lbl_name_list.append('train_data_synthetic/semantic_masks/' + imidx + label_ext)
+  tra_lbl_name_list.append('train_data_synthetic/semantic_masks/' + label_ext)
 
 print("---")
 print("train images: ", len(tra_img_name_list))
