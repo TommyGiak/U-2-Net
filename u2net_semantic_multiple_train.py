@@ -27,7 +27,7 @@ from model import SU2NETP
 
 # ------- 1. define loss function --------
 
-ce_loss = nn.CrossEntropyLoss(size_average=True)
+ce_loss = nn.CrossEntropyLoss(reduction='mean')
 
 def muti_ce_loss_fusion(d0, d1, d2, d3, d4, d5, d6, labels_v):
 
@@ -64,240 +64,240 @@ image_ext = '.png'
 label_ext = '.png'
 
 
-
 epoch_num = 100
 batch_size_train = 4
 batch_size_val = 1
 train_num = 0
 val_num = 0
 
-for i, tra_image_dir_i in enumerate(tra_image_dir):
+if __name__=='__main__':
 
-  tra_img_name_list = glob.glob(data_dir + tra_image_dir_i + '*' + image_ext)
+    for i, tra_image_dir_i in enumerate(tra_image_dir):
 
-  tra_lbl_name_list = []
-  for img_path in tra_img_name_list:
-    img_name = img_path.split(os.sep)[-1]
+        tra_img_name_list = glob.glob(data_dir + tra_image_dir_i + '*' + image_ext)
 
-    aaa = img_name.split(".")
-    bbb = aaa[0:-1]
-    imidx = bbb[0]
-    for k in range(1,len(bbb)):
-      imidx = imidx + "." + bbb[k]
+        tra_lbl_name_list = []
+        for img_path in tra_img_name_list:
+            img_name = img_path.split(os.sep)[-1]
 
-    tra_lbl_name_list.append(data_dir + tra_label_dir[i] + imidx + label_ext)
+            aaa = img_name.split(".")
+            bbb = aaa[0:-1]
+            imidx = bbb[0]
+            for k in range(1,len(bbb)):
+                imidx = imidx + "." + bbb[k]
 
-  print("---")
-  print("train images: ", len(tra_img_name_list))
-  print("train labels: ", len(tra_lbl_name_list))
-  print("---")
+            tra_lbl_name_list.append(data_dir + tra_label_dir[i] + imidx + label_ext)
 
-  train_num = len(tra_img_name_list)
+        print("---")
+        print("train images: ", len(tra_img_name_list))
+        print("train labels: ", len(tra_lbl_name_list))
+        print("---")
 
-  salobj_dataset = SemanticSalObjDataset(
-      img_name_list=tra_img_name_list,
-      lbl_name_list=tra_lbl_name_list,
-      transform=transforms.Compose([
-          RescaleT(320),
-          RandomCrop(288),
-          ToTensorLab(flag=0)]))
-
-  salobj_dataloader = DataLoader(salobj_dataset, 
-                                 batch_size=batch_size_train, 
-                                 shuffle=True,
-                                 pin_memory=True,
-                                 num_workers=4,
-                                 )
+        train_num = len(tra_img_name_list)
 
 
-  # ------- 3. define model --------
-  # define the net
-  if(model_name=='u2net'):
-      net = SU2NET(in_ch=3, out_ch=4)
-  elif(model_name=='u2netp'):
-      net = SU2NETP(in_ch=3, out_ch=4)
+        salobj_dataset = SemanticSalObjDataset(
+            img_name_list=tra_img_name_list,
+            lbl_name_list=tra_lbl_name_list,
+            transform=transforms.Compose([
+                RescaleT(320),
+                RandomCrop(288),
+                ToTensorLab(flag=0)]))
 
-  if torch.cuda.is_available():
-      net.to('cuda')
+        salobj_dataloader = DataLoader(salobj_dataset, 
+                                        batch_size=batch_size_train, 
+                                        shuffle=True,
+                                        pin_memory=True,
+                                        num_workers=4,
+                                        )
 
-  print(f'USING DEVICE: {next(net.parameters()).device}')
+        # ------- 3. define model --------
+        # define the net
+        if(model_name=='u2net'):
+            net = SU2NET(in_ch=3, out_ch=4)
+        elif(model_name=='u2netp'):
+            net = SU2NETP(in_ch=3, out_ch=4)
 
-  # ------- 4. define optimizer --------
-  print("---define optimizer...")
-  optimizer = optim.Adam(net.parameters(), lr=0.0004, betas=(0.9, 0.999), eps=1e-08, weight_decay=1e-5)
-  scheduler = torch.optim.lr_scheduler.LinearLR(optimizer=optimizer, start_factor=1, end_factor=1/10, total_iters=50)
+        if torch.cuda.is_available():
+            net.to('cuda')
 
-  # ------- 5. training process --------
-  print("---start training...")
-  ite_num = 0
-  running_loss = 0.0
-  running_tar_loss = 0.0
-  ite_num4val = 0
-  save_frq = 10 # save the model every 2000 iterations
-  lossi = []
+        print(f'USING DEVICE: {next(net.parameters()).device}')
 
-  for epoch in range(0, epoch_num):
-      net.train()
+        # ------- 4. define optimizer --------
+        print("---define optimizer...")
+        optimizer = optim.Adam(net.parameters(), lr=0.0004, betas=(0.9, 0.999), eps=1e-08, weight_decay=1e-5)
+        scheduler = torch.optim.lr_scheduler.LinearLR(optimizer=optimizer, start_factor=1, end_factor=1/10, total_iters=50)
 
-      for k, data in enumerate(salobj_dataloader):
-          ite_num = ite_num + 1
-          ite_num4val = ite_num4val + 1
+        # ------- 5. training process --------
+        print("---start training...")
+        ite_num = 0
+        running_loss = 0.0
+        running_tar_loss = 0.0
+        ite_num4val = 0
+        save_frq = 10 # save the model every 2000 iterations
+        lossi = []
 
-          inputs, labels = data['image'], data['label']
+        for epoch in range(0, epoch_num):
+            net.train()
 
-          inputs = inputs.type(torch.FloatTensor)
-          labels = labels.type(torch.FloatTensor)
+            for k, data in enumerate(salobj_dataloader):
+                ite_num = ite_num + 1
+                ite_num4val = ite_num4val + 1
 
-          # wrap them in Variable
-          if torch.cuda.is_available():
-              inputs_v, labels_v = Variable(inputs.to('cuda', non_blocking=True), requires_grad=False), Variable(labels.to('cuda', non_blocking=True),
-                                                                                          requires_grad=False)
-          else:
-              inputs_v, labels_v = Variable(inputs, requires_grad=False), Variable(labels, requires_grad=False)
+                inputs, labels = data['image'], data['label']
 
-          # y zero the parameter gradients
-          optimizer.zero_grad()
+                inputs = inputs.type(torch.FloatTensor)
+                labels = labels.type(torch.FloatTensor)
 
-          # forward + backward + optimize
-          d0, d1, d2, d3, d4, d5, d6 = net(inputs_v)
-          loss2, loss = muti_ce_loss_fusion(d0, d1, d2, d3, d4, d5, d6, labels_v)
+                # wrap them in Variable
+                if torch.cuda.is_available():
+                    inputs_v, labels_v = Variable(inputs.to('cuda', non_blocking=True), requires_grad=False), Variable(labels.to('cuda', non_blocking=True),
+                                                                                                requires_grad=False)
+                else:
+                    inputs_v, labels_v = Variable(inputs, requires_grad=False), Variable(labels, requires_grad=False)
 
-          loss.backward()
-          optimizer.step()
-          scheduler.step()
+                # y zero the parameter gradients
+                optimizer.zero_grad()
 
-          # # print statistics
-          running_loss += loss.data.item()
-          running_tar_loss += loss2.data.item()
-          lossi.append(loss.item())
+                # forward + backward + optimize
+                d0, d1, d2, d3, d4, d5, d6 = net(inputs_v)
+                loss2, loss = muti_ce_loss_fusion(d0, d1, d2, d3, d4, d5, d6, labels_v)
 
-          # del temporary outputs and loss
-          del d0, d1, d2, d3, d4, d5, d6, loss2, loss
-      
-      
-          print("[train set: %d, epoch: %3d/%3d, batch: %5d/%5d, ite: %d] train loss: %3f, tar: %3f " % (
-          i, epoch + 1, epoch_num, (k + 1) * batch_size_train, train_num, ite_num, running_loss / ite_num4val, running_tar_loss / ite_num4val))
+                loss.backward()
+                optimizer.step()
+                scheduler.step()
 
-      if (epoch+1) % save_frq == 0:
-          torch.save(net.state_dict(), model_dir[i] + model_name + "_bce_itr_%d_train_%3f_tar_%3f.pth" % (epoch+1, running_loss / ite_num4val, running_tar_loss / ite_num4val))
-          running_loss = 0.0
-          running_tar_loss = 0.0
-          net.train()  # resume train
-          ite_num4val = 0
+                # # print statistics
+                running_loss += loss.data.item()
+                running_tar_loss += loss2.data.item()
+                lossi.append(loss.item())
 
-  pd.DataFrame(lossi).to_csv(model_dir[i]+'lossi.csv')
+                # del temporary outputs and loss
+                del d0, d1, d2, d3, d4, d5, d6, loss2, loss
+            
+            
+                print("[train set: %d, epoch: %3d/%3d, batch: %5d/%5d, ite: %d] train loss: %3f, tar: %3f " % (
+                i, epoch + 1, epoch_num, (k + 1) * batch_size_train, train_num, ite_num, running_loss / ite_num4val, running_tar_loss / ite_num4val))
 
+            if (epoch+1) % save_frq == 0:
+                torch.save(net.state_dict(), model_dir[i] + model_name + "_bce_itr_%d_train_%3f_tar_%3f.pth" % (epoch+1, running_loss / ite_num4val, running_tar_loss / ite_num4val))
+                running_loss = 0.0
+                running_tar_loss = 0.0
+                net.train()  # resume train
+                ite_num4val = 0
+
+        pd.DataFrame(lossi).to_csv(model_dir[i]+'lossi.csv')
 
 
 
 ### Training with synthetic images
 
-print('TRAINING WITH SYNTH IMAGES!')
+    print('TRAINING WITH SYNTH IMAGES!')
 
-tra_img_name_list = glob.glob('train_data_synthetic/validated_fruci/' + '*.png')
+    tra_img_name_list = glob.glob('train_data_synthetic/validated_fruci/' + '*.png')
 
-tra_lbl_name_list = []
-for img_path in tra_img_name_list:
-  img_name = img_path.split('/')[-1]
+    tra_lbl_name_list = []
+    for img_path in tra_img_name_list:
+        img_name = img_path.split('/')[-1]
 
-  aaa = img_name.split(".")
-  bbb = aaa[0:-1]
-  imidx = bbb[0]
-  for k in range(1,len(bbb)):
-    imidx = imidx + "." + bbb[k]
+        aaa = img_name.split(".")
+        bbb = aaa[0:-1]
+        imidx = bbb[0]
+        for k in range(1,len(bbb)):
+            imidx = imidx + "." + bbb[k]
 
-  tra_lbl_name_list.append('train_data_synthetic/semantic_masks/' + label_ext)
+        tra_lbl_name_list.append('train_data_synthetic/semantic_masks/' + imidx + label_ext)
 
-print("---")
-print("train images: ", len(tra_img_name_list))
-print("train labels: ", len(tra_lbl_name_list))
-print("---")
+    print("---")
+    print("train images: ", len(tra_img_name_list))
+    print("train labels: ", len(tra_lbl_name_list))
+    print("---")
 
-train_num = len(tra_img_name_list)
+    train_num = len(tra_img_name_list)
 
-salobj_dataset = SemanticSalObjDataset(
-    img_name_list=tra_img_name_list,
-    lbl_name_list=tra_lbl_name_list,
-    transform=transforms.Compose([
-        RescaleT(320),
-        RandomCrop(288),
-        ToTensorLab(flag=0)]))
+    salobj_dataset = SemanticSalObjDataset(
+        img_name_list=tra_img_name_list,
+        lbl_name_list=tra_lbl_name_list,
+        transform=transforms.Compose([
+            RescaleT(320),
+            RandomCrop(288),
+            ToTensorLab(flag=0)]))
 
-salobj_dataloader = DataLoader(salobj_dataset, batch_size=batch_size_train, shuffle=True)#, num_workers=1)
+    salobj_dataloader = DataLoader(salobj_dataset, batch_size=batch_size_train, shuffle=True)#, num_workers=1)
 
 
-# ------- 3. define model --------
-# define the net
-if(model_name=='u2net'):
-    net = SU2NET(in_ch=3, out_ch=4)
-elif(model_name=='u2netp'):
-    net = SU2NETP(in_ch=3, out_ch=4)
+    # ------- 3. define model --------
+    # define the net
+    if(model_name=='u2net'):
+        net = SU2NET(in_ch=3, out_ch=4)
+    elif(model_name=='u2netp'):
+        net = SU2NETP(in_ch=3, out_ch=4)
 
-if torch.cuda.is_available():
-    net.cuda()
+    if torch.cuda.is_available():
+        net.cuda()
 
-# ------- 4. define optimizer --------
-print("---define optimizer...")
-optimizer = optim.Adam(net.parameters(), lr=0.0004, betas=(0.9, 0.999), eps=1e-08, weight_decay=1e-5)
-scheduler = torch.optim.lr_scheduler.LinearLR(optimizer=optimizer, start_factor=1, end_factor=1/10, total_iters=50)
+    # ------- 4. define optimizer --------
+    print("---define optimizer...")
+    optimizer = optim.Adam(net.parameters(), lr=0.0004, betas=(0.9, 0.999), eps=1e-08, weight_decay=1e-5)
+    scheduler = torch.optim.lr_scheduler.LinearLR(optimizer=optimizer, start_factor=1, end_factor=1/10, total_iters=50)
 
-# ------- 5. training process --------
-print("---start training...")
-ite_num = 0
-running_loss = 0.0
-running_tar_loss = 0.0
-ite_num4val = 0
-save_frq = 10 # save the model every 2000 iterations
-lossi = []
+    # ------- 5. training process --------
+    print("---start training...")
+    ite_num = 0
+    running_loss = 0.0
+    running_tar_loss = 0.0
+    ite_num4val = 0
+    save_frq = 10 # save the model every 2000 iterations
+    lossi = []
 
-for epoch in range(0, epoch_num):
-    net.train()
+    for epoch in range(0, epoch_num):
+        net.train()
 
-    for k, data in enumerate(salobj_dataloader):
-        ite_num = ite_num + 1
-        ite_num4val = ite_num4val + 1
+        for k, data in enumerate(salobj_dataloader):
+            ite_num = ite_num + 1
+            ite_num4val = ite_num4val + 1
 
-        inputs, labels = data['image'], data['label']
+            inputs, labels = data['image'], data['label']
 
-        inputs = inputs.type(torch.FloatTensor)
-        labels = labels.type(torch.FloatTensor)
+            inputs = inputs.type(torch.FloatTensor)
+            labels = labels.type(torch.FloatTensor)
 
-        # wrap them in Variable
-        if torch.cuda.is_available():
-            inputs_v, labels_v = Variable(inputs.cuda(), requires_grad=False), Variable(labels.cuda(),
-                                                                                        requires_grad=False)
-        else:
-            inputs_v, labels_v = Variable(inputs, requires_grad=False), Variable(labels, requires_grad=False)
+            # wrap them in Variable
+            if torch.cuda.is_available():
+                inputs_v, labels_v = Variable(inputs.cuda(), requires_grad=False), Variable(labels.cuda(),
+                                                                                            requires_grad=False)
+            else:
+                inputs_v, labels_v = Variable(inputs, requires_grad=False), Variable(labels, requires_grad=False)
 
-        # y zero the parameter gradients
-        optimizer.zero_grad()
+            # y zero the parameter gradients
+            optimizer.zero_grad()
 
-        # forward + backward + optimize
-        d0, d1, d2, d3, d4, d5, d6 = net(inputs_v)
-        loss2, loss = muti_ce_loss_fusion(d0, d1, d2, d3, d4, d5, d6, labels_v)
+            # forward + backward + optimize
+            d0, d1, d2, d3, d4, d5, d6 = net(inputs_v)
+            loss2, loss = muti_ce_loss_fusion(d0, d1, d2, d3, d4, d5, d6, labels_v)
 
-        loss.backward()
-        optimizer.step()
-        scheduler.step()
+            loss.backward()
+            optimizer.step()
+            scheduler.step()
 
-        # # print statistics
-        running_loss += loss.data.item()
-        running_tar_loss += loss2.data.item()
-        lossi.append(loss.item())
+            # # print statistics
+            running_loss += loss.data.item()
+            running_tar_loss += loss2.data.item()
+            lossi.append(loss.item())
 
-        # del temporary outputs and loss
-        del d0, d1, d2, d3, d4, d5, d6, loss2, loss
-    
-    
-        print("[train synthetic, epoch: %3d/%3d, batch: %5d/%5d, ite: %d] train loss: %3f, tar: %3f " % (
-        epoch + 1, epoch_num, (k + 1) * batch_size_train, train_num, ite_num, running_loss / ite_num4val, running_tar_loss / ite_num4val))
-    
-    os.makedirs('saved_models/u2net_synth/',exist_ok=True)
-    if (epoch+1) % save_frq == 0:
-        torch.save(net.state_dict(), 'saved_models/u2net_synth/' + model_name + "_bce_itr_%d_train_%3f_tar_%3f.pth" % (epoch+1, running_loss / ite_num4val, running_tar_loss / ite_num4val))
-        running_loss = 0.0
-        running_tar_loss = 0.0
-        net.train()  # resume train
-        ite_num4val = 0
+            # del temporary outputs and loss
+            del d0, d1, d2, d3, d4, d5, d6, loss2, loss
+        
+        
+            print("[train synthetic, epoch: %3d/%3d, batch: %5d/%5d, ite: %d] train loss: %3f, tar: %3f " % (
+            epoch + 1, epoch_num, (k + 1) * batch_size_train, train_num, ite_num, running_loss / ite_num4val, running_tar_loss / ite_num4val))
+        
+        os.makedirs('saved_models/u2net_synth/',exist_ok=True)
+        if (epoch+1) % save_frq == 0:
+            torch.save(net.state_dict(), 'saved_models/u2net_synth/' + model_name + "_bce_itr_%d_train_%3f_tar_%3f.pth" % (epoch+1, running_loss / ite_num4val, running_tar_loss / ite_num4val))
+            running_loss = 0.0
+            running_tar_loss = 0.0
+            net.train()  # resume train
+            ite_num4val = 0
 
-pd.DataFrame(lossi).to_csv('saved_models/u2net_synth/'+'lossi.csv')
+    pd.DataFrame(lossi).to_csv('saved_models/u2net_synth/'+'lossi.csv')
