@@ -223,7 +223,7 @@ if __name__=='__main__':
             RandomCrop(288),
             ToTensorLab(flag=0)]))
 
-    salobj_dataloader = DataLoader(salobj_dataset, batch_size=batch_size_train, shuffle=True)#, num_workers=1)
+    salobj_dataloader = DataLoader(salobj_dataset, batch_size=batch_size_train, shuffle=True, num_workers=1)
 
 
     # ------- 3. define model --------
