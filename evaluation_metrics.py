@@ -49,8 +49,8 @@ print(f'Found {len(test_img_list)} images and {len(test_lbl_list)} masks')
 
 
 salobj_dataset = SemanticSalObjDataset(
-  img_name_list=test_img_list[:10],
-  lbl_name_list=test_lbl_list[:10],
+  img_name_list=test_img_list,
+  lbl_name_list=test_lbl_list,
   transform=transforms.Compose([
     RescaleT(320),
     RandomCrop(288),
