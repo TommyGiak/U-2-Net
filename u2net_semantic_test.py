@@ -22,7 +22,7 @@ from model import SU2NET # full size version 173.6 MB
 from model import SU2NETP # small version u2net 4.7 MB
 
 
-PATH_TO_WEIGHTS = './saved_models/u2net_real0/u2net_bce_itr_45000_train_0.110284_tar_0.009765.pth'
+PATH_TO_WEIGHTS = './saved_models/u2net_real2/u2net_bce_itr_100_train_0.124739_tar_0.011449.pth'
 
 
 # normalize the predicted SOD probability map
