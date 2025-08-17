@@ -142,8 +142,8 @@ with torch.no_grad():
     body_only_metrics = compute_metrics(one_hot, labels, layers=[1], d=body_only_metrics)
 
 
-os.makedirs('metrics/')
-os.makedirs(f'metrics/model_real{EVAL_MODEL_N}/')
+os.makedirs('metrics/', exist_ok=True)
+os.makedirs(f'metrics/model_real{EVAL_MODEL_N}/', exist_ok=True)
 pd.DataFrame(wound_metrics).to_csv(f'metrics/model_real{EVAL_MODEL_N}/wound.csv')
 pd.DataFrame(body_wound_marker_metrics).to_csv(f'metrics/model_real{EVAL_MODEL_N}/body_wound_marker.csv')
 pd.DataFrame(marker_metrics).to_csv(f'metrics/model_real{EVAL_MODEL_N}/marker.csv')
