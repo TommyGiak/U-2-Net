@@ -77,15 +77,16 @@ for EVAL_MODEL_N in range(-1,6):
   EPS = 1e-6
 
   def compute_metrics(one_hot, lable, layers, d):
-    if len(layers)>1:
-      pred = one_hot[layers[0]]
-      gt = lable[layers[0]]
-      for l in layers[1:]:
-        pred += one_hot[l]
-        gt += lable[l]
-    else:
-      pred = one_hot[layers]
-      gt = lable[layers]
+    if isinstance(layers, int):
+      layers = [layers]
+    elif not isinstance(layers, list):
+      layers = list(layers)
+
+    pred = one_hot[layers[0]].clone()
+    gt = lable[layers[0]].clone()
+    for l in layers[1:]:
+      pred += one_hot[l]
+      gt += lable[l]
 
     tp = (pred*gt).sum()
     fp = (pred*torch.logical_not(gt)).sum()
@@ -97,7 +98,7 @@ for EVAL_MODEL_N in range(-1,6):
 
     d['precision'].append(((tp+EPS)/(tp+fp+EPS)).item())
     d['recall'].append(((tp+EPS)/(tp+fn+EPS)).item())
-    d['accuracy'].append(((tp+tn+EPS)/tot).item())
+    d['accuracy'].append(((tp+tn+EPS)/(tot+EPS)).item())
     d['dice'].append(((2*tp+EPS)/(2*tp+fp+fn+EPS)).item())
     d['iou'].append(((tp+EPS)/(tp+fp+fn+EPS)).item())
 

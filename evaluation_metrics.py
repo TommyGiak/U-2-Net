@@ -96,7 +96,7 @@ def compute_metrics(one_hot, lable, layers, d):
 
   d['precision'].append(((tp+EPS)/(tp+fp+EPS)).item())
   d['recall'].append(((tp+EPS)/(tp+fn+EPS)).item())
-  d['accuracy'].append(((tp+tn+EPS)/tot).item())
+  d['accuracy'].append(((tp+tn+EPS)/(tot+EPS)).item())
   d['dice'].append(((2*tp+EPS)/(2*tp+fp+fn+EPS)).item())
   d['iou'].append(((tp+EPS)/(tp+fp+fn+EPS)).item())
 
