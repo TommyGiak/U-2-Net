@@ -77,16 +77,15 @@ for EVAL_MODEL_N in range(-1,6):
   EPS = 1e-6
 
   def compute_metrics(one_hot, lable, layers, d):
-    if isinstance(layers, int):
-      layers = [layers]
-    elif not isinstance(layers, list):
-      layers = list(layers)
-
-    pred = one_hot[layers[0]].clone()
-    gt = lable[layers[0]].clone()
-    for l in layers[1:]:
-      pred += one_hot[l]
-      gt += lable[l]
+    if len(layers)>1:
+      pred = one_hot[layers[0]]
+      gt = lable[layers[0]]
+      for l in layers[1:]:
+        pred += one_hot[l]
+        gt += lable[l]
+    else:
+      pred = one_hot[layers]
+      gt = lable[layers]
 
     tp = (pred*gt).sum()
     fp = (pred*torch.logical_not(gt)).sum()
