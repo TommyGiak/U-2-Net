@@ -52,6 +52,8 @@ for path in tqdm(fruci_list):
       path_lbl = label_folder+img_test
       test_lbl_list.remove(path_lbl)
 
+print(f'Supposed numer of final test images: {len(complete_data_list)}-{len(fruci_list)}={len(complete_data_list)-len(fruci_list)}')
+
 print(f'Final number of images: {len(test_img_list)}')
 print(f'Final number of lables: {len(test_lbl_list)}')
 
