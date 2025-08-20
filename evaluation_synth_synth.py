@@ -43,10 +43,14 @@ print(f'Found {len(fruci_list)} images in {fruci_folder}')
 print(f'Found {len(label_list)} images in {label_folder}')
 
 print('starting filtering test images with train images...')
-for img in tqdm(fruci_list):
-  if img in complete_data_list:
-    test_img_list.remove(img)
-    test_lbl_list.remove(img)
+for path in tqdm(fruci_list):
+  img = path.split('/')[-1]
+  for path_test in complete_data_list:
+    img_test = path_test.split('/')[-1]
+    if img == img_test:
+      test_img_list.remove(path_test)
+      path_lbl = label_folder+img_test
+      test_lbl_list.remove(path_lbl)
 
 print(f'Final number of images: {len(test_img_list)}')
 print(f'Final number of lables: {len(test_lbl_list)}')
