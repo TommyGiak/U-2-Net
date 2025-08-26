@@ -60,6 +60,8 @@ for i in range(5):
 
   os.makedirs(model_dir[i], exist_ok=True)
 
+tra_image_dir = [] #!!! TAKEN OUT ALL THE REAL FOLDERS!!!
+
 image_ext = '.png'
 label_ext = '.png'
 
@@ -194,7 +196,7 @@ if __name__=='__main__':
 
     print('TRAINING WITH SYNTH IMAGES!')
 
-    tra_img_name_list = glob.glob('train_data_synthetic/validated_fruci/' + '*.png')
+    tra_img_name_list = glob.glob('train_data_synthetic/wounds/' + '*.png') #!!! USING ALL SYNTH
 
     tra_lbl_name_list = []
     for img_path in tra_img_name_list:
@@ -292,12 +294,12 @@ if __name__=='__main__':
             print("[train synthetic, epoch: %3d/%3d, batch: %5d/%5d, ite: %d] train loss: %3f, tar: %3f " % (
             epoch + 1, epoch_num, (k + 1) * batch_size_train, train_num, ite_num, running_loss / ite_num4val, running_tar_loss / ite_num4val))
         
-        os.makedirs('saved_models/u2net_synth/',exist_ok=True)
+        os.makedirs('saved_models/u2net_synth_full/',exist_ok=True)  #!!! USING ALL SYNTH
         if (epoch+1) % save_frq == 0:
-            torch.save(net.state_dict(), 'saved_models/u2net_synth/' + model_name + "_bce_itr_%d_train_%3f_tar_%3f.pth" % (epoch+1, running_loss / ite_num4val, running_tar_loss / ite_num4val))
+            torch.save(net.state_dict(), 'saved_models/u2net_synth_full/' + model_name + "_bce_itr_%d_train_%3f_tar_%3f.pth" % (epoch+1, running_loss / ite_num4val, running_tar_loss / ite_num4val))  #!!! USING ALL SYNTH
             running_loss = 0.0
             running_tar_loss = 0.0
             net.train()  # resume train
             ite_num4val = 0
 
-    pd.DataFrame(lossi).to_csv('saved_models/u2net_synth/'+'lossi.csv')
+    pd.DataFrame(lossi).to_csv('saved_models/u2net_synth_full/'+'lossi.csv')  #!!! USING ALL SYNTH
